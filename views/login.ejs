@@ -1,15 +1,15 @@
 <main class="form-signin w-100 m-auto rtl">
-    <form>
+    <form action="/users/login" method="POST">
         <h1 class="h3 mb-3 fw-normal">ورود به بخش مدیریت</h1>
 
         <div class="form-floating">
             <label for="floatingInput"> آدرس ایمیل</label>
-            <input type="email" class="form-control" id="floatingInput" placeholder="آدرس ایمیل">
+            <input type="email" name="email" class="form-control mb-2" id="floatingInput" placeholder="آدرس ایمیل">
 
         </div>
         <div class="form-floating">
             <label for="floatingPassword"> کلمه عبور</label>
-            <input type="password" class="form-control" id="floatingPassword" placeholder="کلمه عبور">
+            <input type="password" name="password" class="form-control" id="floatingPassword" placeholder="کلمه عبور">
         </div>
 
         <div class="checkbox mb-3">
