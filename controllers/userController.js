@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const passport = require("passport");
 
 const User = require('../models/User');
 
@@ -6,23 +7,27 @@ const User = require('../models/User');
 exports.login = (req, res) => {
     res.render("login", {
         pageTitle: "صفحه ورود",
-        path: "/login"
+        path: "/login",
+        message: req.flash("success_msg"),
+        error: req.flash("error")
     })
 }
 
-exports.register = (req, res) => {
+exports.register = (req, res, next) => {
     res.render("register", {
         pageTitle: "ثبت نام کاربر",
         path: "/register"
     });
 }
 
-exports.loginPostMethod = (req, res) => {
-    if (req.body) {
-        console.log(req.body);
-
-    }
+exports.handleLogin = (req, res, next) => {
+    passport.authenticate("local", {
+        successRedirect: "/dashboard",
+        failureRedirect: "/users/login",
+        failureFlash: true,
+    })(req, res, next);
 };
+
 
 exports.createUser = async(req, res) => {
     if (req.body) {
@@ -52,6 +57,7 @@ exports.createUser = async(req, res) => {
                     email,
                     password: hash
                 })
+                req.flash("success_msg", "ثبت نام موفقیت آمیز بود")
                 res.redirect("/users/login")
                     // bcrypt.genSalt(10, (err, salt) => {
                     //     if (err) {

@@ -5,6 +5,9 @@ const bodyParser = require('body-parser');
 const expressLayout = require('express-ejs-layouts');
 const dotEnv = require('dotenv');
 const morgan = require('morgan');
+const flash = require('connect-flash');
+const session = require("express-session");
+const passport = require('passport');
 
 const connectDB = require('./config/db');
 
@@ -15,6 +18,9 @@ dotEnv.config({
 
 //* Database Connection
 connectDB();
+
+//* Passport Configuration
+require('./config/passport');
 
 
 const app = express();
@@ -30,8 +36,26 @@ app.set('view engine', 'ejs');
 app.set("layout", "./layouts/mainLayout");
 app.set('views', 'views');
 
-//* Midldlewares
+//* Body-Parser
 app.use(bodyParser.urlencoded({ extended: false }));
+
+//* Session
+app.use(
+    session({
+        secret: "secret",
+        maxAge: 600000,
+        cookie: { maxAge: 60000 },
+        resave: false,
+        saveUninitialized: true,
+    })
+);
+
+//* Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+//* Flash
+app.use(flash());
 
 //* Statics Folder
 app.use(express.static(path.join(__dirname, "public")));

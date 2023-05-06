@@ -68,7 +68,7 @@ router.get("/register", usercontroller.register);
 
 // @desc Login Handle
 // @route POST /users/login
-router.post("/login", usercontroller.loginPostMethod);
+router.post("/login", usercontroller.handleLogin);
 
 // @desc Register Handle
 // @route POST /users/register
