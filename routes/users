@@ -6,6 +6,8 @@ const validator = new Validator();
 const router = new Router();
 const User = require('../models/User');
 const usercontroller = require('../controllers/userController');
+const { authenticated } = require('../middlewares/auth');
+
 
 
 
@@ -66,12 +68,18 @@ router.get("/login", usercontroller.login);
 // @route  GET /users/register
 router.get("/register", usercontroller.register);
 
+//@desc Logout Handle
+//@route GET /users/register
+router.get("/logout", authenticated, usercontroller.logout);
+
 // @desc Login Handle
 // @route POST /users/login
-router.post("/login", usercontroller.handleLogin);
+router.post("/login", usercontroller.handleLogin, usercontroller.rememberMe);
 
 // @desc Register Handle
 // @route POST /users/register
 router.post("/register", usercontroller.createUser);
+
+
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const passport = require("passport");
+const fetch = require('node-fetch');
 
 const User = require('../models/User');
 
@@ -13,20 +14,62 @@ exports.login = (req, res) => {
     })
 }
 
-exports.register = (req, res, next) => {
+exports.register = (req, res) => {
     res.render("register", {
         pageTitle: "ثبت نام کاربر",
         path: "/register"
     });
 }
 
-exports.handleLogin = (req, res, next) => {
-    passport.authenticate("local", {
-        successRedirect: "/dashboard",
-        failureRedirect: "/users/login",
-        failureFlash: true,
-    })(req, res, next);
+exports.handleLogin = async(req, res, next) => {
+    if (!req.body["g-recaptcha-response"] || req.body["g-recaptcha-response"] == 'undefiend' || req.body["g-recaptcha-response"] == null) {
+        req.flash("error", "اعتبارسنجی captcha الزامی میباشد");
+        return res.redirect("/users/login");
+    }
+    const secretKey = process.env.CAPTCHA_SECRET
+    const verifyUrl = `https://google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${req.body["g-recaptcha-response"]}&remoteip=${req.connection.remoteAddress}`
+
+    const response = await fetch(verifyUrl, {
+        method: "POST",
+        header: {
+            Accept: "application/json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=utf8"
+        }
+    })
+
+    const resultInJson = await response.json();
+    const isSuccess = resultInJson.success;
+
+    if (isSuccess) {
+        console.log("I am hereeeeeeeeeeeeeeeeeeeeeeeee");
+        passport.authenticate("local", {
+            // successRedirect: "/dashboard",
+            failureRedirect: "/users/login",
+            failureFlash: true,
+        })(req, res, next);
+    } else {
+        req.flash("error", "مشکلی در اعتبارسنجی captcha هست")
+        res.redirect("/users/login")
+    }
+
+
 };
+
+exports.rememberMe = (req, res) => {
+    if (req.body.remember) {
+        req.session.cookie.originalMaxAge = 24 * 60 * 60 * 1000 //24h
+
+    } else {
+        req.session.cookie.expire = null;
+    }
+    res.redirect("/dashboard")
+}
+
+exports.logout = (req, res) => {
+    req.logout();
+    req.flash("success_msg", "خروج موفقیت آمیز بود")
+    res.redirect("/users/login")
+}
 
 
 exports.createUser = async(req, res) => {

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { registerSchema } = require('./secure/userValidation');
 
 const userSchema = new mongoose.Schema({
@@ -29,6 +30,19 @@ const userSchema = new mongoose.Schema({
 userSchema.statics.userValidation = function(body) {
     return registerSchema.validate(body, { abortEarly: false });
 }
+
+// userSchema.pre("save", function(next) {
+//     let user = this;
+
+//     if (!user.isModified("password")) return next();
+
+//     bcrypt.hash(user.password, 10, (err, hash) => {
+//         if (err) return next(err);
+
+//         user.password = hash;
+//         next();
+//     });
+// });
 
 const User = mongoose.model("User", userSchema);
 

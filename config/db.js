@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const debug = require('debug')("weblog-project");
+
 
 const connectDB = async() => {
     try {
@@ -9,7 +11,7 @@ const connectDB = async() => {
                 // useFindAndModify: true
             }
         );
-        console.log(`MongoDB connected: ${connection.connection.host}`);
+        debug(`MongoDB connected: ${connection.connection.host}`);
     } catch (error) {
         console.log(error);
         process.exit(1);

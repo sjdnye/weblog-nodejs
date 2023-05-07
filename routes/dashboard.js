@@ -10,8 +10,8 @@ router.get("/", authenticated, (req, res) => {
     res.render("dashboard", {
         pageTitle: "بخش مدیریت | داشبورد",
         path: "/dashboard",
-        layout: "./layouts/dashLayout"
-
+        layout: "./layouts/dashLayout",
+        fullname: req.user.fullname
     })
 })
 

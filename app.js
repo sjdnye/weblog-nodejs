@@ -1,15 +1,19 @@
 const path = require('path');
 
 const express = require('express');
+const mongoose = require('mongoose');
+const debug = require('debug')("weblog-project");
 const bodyParser = require('body-parser');
 const expressLayout = require('express-ejs-layouts');
 const dotEnv = require('dotenv');
 const morgan = require('morgan');
 const flash = require('connect-flash');
 const session = require("express-session");
+const MongoStore = require('connect-mongo')(session);
 const passport = require('passport');
 
 const connectDB = require('./config/db');
+const winston = require('./config/winston');
 
 //* Load Config
 dotEnv.config({
@@ -27,7 +31,7 @@ const app = express();
 
 //* Logging
 if (process.env.NODE_ENV === "development") {
-    app.use(morgan('dev'));
+    app.use(morgan('combine', { stream: winston.stream }));
 }
 
 //* View Engine
@@ -43,10 +47,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(
     session({
         secret: "secret",
-        maxAge: 600000,
-        cookie: { maxAge: 60000 },
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
+        store: new MongoStore({ mongooseConnection: mongoose.connection })
     })
 );
 
@@ -82,4 +85,4 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 
 
-app.listen(PORT, () => console.log(`App is running in ${process.env.NODE_ENV} mode on port ${PORT}`));
+app.listen(PORT, () => debug(`App is running in ${process.env.NODE_ENV} mode on port ${PORT}`));
