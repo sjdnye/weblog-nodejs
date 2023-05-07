@@ -42,8 +42,6 @@ userSchema.statics.userValidation = function(body) {
 //         user.password = hash;
 //         next();
 //     });
-// });
+// }); 
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+module.exports = mongoose.model("User", userSchema);;

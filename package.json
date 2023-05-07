@@ -26,6 +26,7 @@
         "express-ejs-layouts": "^2.5.1",
         "express-session": "^1.17.3",
         "fastest-validator": "^1.17.0",
+        "jalali-moment": "^3.3.11",
         "mongo": "^0.1.0",
         "mongoose": "^5.10.9",
         "morgan": "^1.10.0",

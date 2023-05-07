@@ -46,7 +46,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 //* Session
 app.use(
     session({
-        secret: "secret",
+        secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
         store: new MongoStore({ mongooseConnection: mongoose.connection })
@@ -74,12 +74,7 @@ app.use("/dashboard", require('./routes/dashboard'));
 
 
 //* 404 Page
-app.use((req, res) => {
-    res.render("404", {
-        pageTitle: "404",
-        path: "/404"
-    })
-});
+app.use(require('./controllers/errorController').get404);
 
 
 const PORT = process.env.PORT || 3000;
