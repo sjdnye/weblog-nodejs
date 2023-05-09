@@ -49,6 +49,7 @@ app.use(
         secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
+        unset: "destroy",
         store: new MongoStore({ mongooseConnection: mongoose.connection })
     })
 );

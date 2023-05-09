@@ -10,9 +10,14 @@ const  {storage, fileFilter} = require('../utils/multer');
 
 
 exports.getDashboard = async(req, res) => {
-    // const page = +req.query.page; // this is for query approach . + is for transforming string to integer
+    const page = +req.query.page || 1; // this is for query approach . + is for transforming string to integer
+    const postPerPage = 2;
     try {
+        const numberOfPost = await Blog.find({user: req.user._id}).countDocuments();
+
         const blogs = await Blog.find({ user: req.user.id })
+            .skip((page - 1) * postPerPage)
+            .limit(postPerPage)
 
         res.render("private/blogs", {
             pageTitle: "بخش مدیریت | داشبورد",
@@ -20,9 +25,14 @@ exports.getDashboard = async(req, res) => {
             layout: "./layouts/dashLayout",
             fullname: req.user.fullname,
             blogs: blogs,
-            formatDate: formatDate
+            formatDate: formatDate,
+            currentPage: page,
+            nextPage: page + 1,
+            prevPage: page - 1,
+            hasNextPage: postPerPage * page < numberOfPost,
+            hasPrevPage: page > 1,
+            lastPage: Math.ceil(numberOfPost / postPerPage)
         })
-
     } catch (err) {
      get500(req, res);
     }

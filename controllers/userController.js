@@ -57,7 +57,6 @@ exports.handleLogin = async(req, res, next) => {
 exports.rememberMe = (req, res) => {
     if (req.body.remember) {
         req.session.cookie.originalMaxAge = 24 * 60 * 60 * 1000 //24h
-
     } else {
         req.session.cookie.expire = null;
     }
@@ -65,8 +64,9 @@ exports.rememberMe = (req, res) => {
 }
 
 exports.logout = (req, res) => {
+    req.session = null;
     req.logout();
-    req.flash("success_msg", "خروج موفقیت آمیز بود")
+    // req.flash("success_msg", "خروج موفقیت آمیز بود");
     res.redirect("/users/login")
 }
 
