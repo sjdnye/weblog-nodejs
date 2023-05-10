@@ -75,7 +75,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 
 //* Routes
-app.use("/",require('./routes/blog'));
+app.use(require('./routes/blog'));
 app.use("/users", require('./routes/users'));
 app.use("/dashboard", require('./routes/dashboard'));
 app.use("/post", require('./routes/posts'));

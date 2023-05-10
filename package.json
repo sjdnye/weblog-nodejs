@@ -15,6 +15,7 @@
         "app-root-path": "^3.1.0",
         "bcryptjs": "^2.4.3",
         "body-parser": "^1.20.2",
+        "captchapng": "^0.0.1",
         "clipboard": "^2.0.11",
         "connect-flash": "^0.1.1",
         "connect-mongo": "^3.2.0",
