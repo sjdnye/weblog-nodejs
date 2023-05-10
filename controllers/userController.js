@@ -217,12 +217,11 @@ exports.handleForgetPassword = async(req, res) => {
         })
     }
     const token = jwt.sign({ userId: user._id}, process.env.JWT_SECRET, { expiresIn: "1h"});
-    const resetLink = `http://localhost:3000/users/reset-password/${token}`;
+    const resetLink = `http://sjdnye.dev/users/reset-password/${token}`;
 
     sendEmail(uer.email, user.fullname, 'فراموشی رمز عبور', `
     برای تغییر رمز عبور روی لینک زیر کلیک کنید
-    <a href="${resetLink}"> لینک تغییر رمز عبور </a>
-    `
+    <a href="${resetLink}"> لینک تغییر رمز عبور </a>`
     );
 
     req.flash("success_msg", "ایمیل حاوی لینک با موفقیت ارسال شد")
@@ -245,7 +244,6 @@ exports.resetPassword = async(req, res) => {
         if(!decodedToken){
             return res.redirect("/404");
         }
-        
     }
     res.render("resetPass",{
         pageTitle: "تغییر رمز عبور",
@@ -286,3 +284,5 @@ exports.handleResetPassword = async(req, res) => {
         res.redirect("errors/500"); 
     }
 }
+
+

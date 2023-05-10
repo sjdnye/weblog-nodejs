@@ -5,6 +5,7 @@ const captchapng = require('captchapng');
 const Blog = require("../models/Blog");
 const { formatDate } = require("../utils/jalali");
 const { truncate } = require('../utils/helpers');
+const {get500} = require('./errorController');
 
 let CAPTCHA_NUM;
 
@@ -37,7 +38,7 @@ exports.getIndex = async (req, res) => {
         });
     } catch (err) {
         console.log(err);
-        res.render("errors/500");
+        get500(req, res)
     }
 };
 
@@ -128,3 +129,48 @@ exports.getCaptcha = (req, res) => {
 
     res.send(imgBase64);
 };
+
+
+exports.handleSearch = async (req, res) => {
+    try {
+        const page = +req.query.page || 1; 
+        const postPerPage = 5;
+
+        const numberOfPost = await Blog.find({
+            status: "public",
+            $text: {$search: req.body.search}
+        })
+        .countDocuments();
+
+        const posts = await Blog.find({ 
+            status: "public",
+            $text: {$search: req.body.search}
+             })
+            .sort({
+                createdAt: "desc",
+            })
+            .skip((page - 1) * postPerPage)
+            .limit(postPerPage)
+
+        res.render("index", {
+            pageTitle: "نتایج جستجو",
+            path: "/",
+            posts,
+            formatDate,
+            truncate,
+            currentPage: page,
+            nextPage: page + 1,
+            prevPage: page - 1,
+            hasNextPage: postPerPage * page < numberOfPost,
+            hasPrevPage: page > 1,
+            lastPage: Math.ceil(numberOfPost / postPerPage)
+        });
+    } catch (err) {
+        console.log(err);
+        res.render("errors/500",{
+            pageTitle : "خطای سرور | 500",
+            path : "/404"
+         });
+    }
+
+}

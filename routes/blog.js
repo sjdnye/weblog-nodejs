@@ -22,6 +22,11 @@ router.get("/captcha.png",blogController.getCaptcha);
 router.post("/contact",blogController.handleContactPage);
 
 
+// @desc  Handle Search Page
+// @route POST /search
+router.post("/search",blogController.handleSearch);
+
+
 
 
 

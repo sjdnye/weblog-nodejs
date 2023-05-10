@@ -22,6 +22,7 @@ exports.getDashboard = async(req, res) => {
         const blogs = await Blog.find({ user: req.user.id })
             .skip((page - 1) * postPerPage)
             .limit(postPerPage)
+            .sort({ createdAt : "desc"})
 
         res.render("private/blogs", {
             pageTitle: "بخش مدیریت | داشبورد",
@@ -77,6 +78,7 @@ exports.getEditPost = async(req, res) => {
 
     } catch (err) {
         console.log(err);
+        get500(req,res);
     }
 
 }
@@ -143,7 +145,7 @@ exports.handleEditPost = async(req ,res) => {
             await Blog.postValidation({... req.body, thumbnail : {name: "placeholder", size:0, mimetype: "image/jpeg"}})
         }
         if (!post) {
-            return res.redirect("errors/404");
+            return res.redirect("/404");
         }
 
         if (post.user.toString() != req.user._id) {
@@ -198,7 +200,7 @@ exports.getDeletePost = async(req, res) => {
         
     } catch (err) {
         console.log(err);
-        res.render("errors/500");
+        get500(req, res);
     }
        
 
@@ -234,7 +236,7 @@ exports.handleUploadImage = (req, res) => {
                     .toFile(`./public/uploads/${fileName}`)
                     .catch((err) => console.log(err));
                 res.status(200).send(
-                    `http://localhost:3000/uploads/${fileName}`
+                    `http://sjdnye.dev/uploads/${fileName}`
                 );
             } else {
                 res.send("جهت آپلود باید عکسی انتخاب کنید");
@@ -242,3 +244,41 @@ exports.handleUploadImage = (req, res) => {
         }
     });
 };
+
+
+exports.handleDashboardSearch = async(req, res) => {
+
+    const page = +req.query.page || 1; // this is for query approach . + is for transforming string to integer
+    const postPerPage = 5;
+    try {
+        const numberOfPost = await Blog.find({
+            user: req.user._id,
+            $text : {$search : req.body.search}
+        }).countDocuments();
+
+        const blogs = await Blog.find({
+             user: req.user.id,
+             $text : {$search : req.body.search}
+             })
+            .skip((page - 1) * postPerPage)
+            .limit(postPerPage)
+            .sort({ createdAt : "desc"})
+
+        res.render("private/blogs", {
+            pageTitle: "بخش مدیریت | داشبورد",
+            path: "/dashboard",
+            layout: "./layouts/dashLayout",
+            fullname: req.user.fullname,
+            blogs: blogs,
+            formatDate: formatDate,
+            currentPage: page,
+            nextPage: page + 1,
+            prevPage: page - 1,
+            hasNextPage: postPerPage * page < numberOfPost,
+            hasPrevPage: page > 1,
+            lastPage: Math.ceil(numberOfPost / postPerPage)
+        })
+    } catch (err) {
+         get500(req, res);
+    }  
+}

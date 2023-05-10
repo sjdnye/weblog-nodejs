@@ -1,5 +1,6 @@
 const Blog = require('../models/Blog');
 const {formatDate} = require('../utils/jalali');
+const {get500} = require('./errorController');
 
 
 exports.showPost = async(req, res) => {
@@ -7,7 +8,7 @@ exports.showPost = async(req, res) => {
         const postId = req.params.id;
         const post = await Blog.findOne({_id : postId}).populate("user");
         if(!post || post == null){
-            return res.redirect("errors/400");
+            return res.redirect("/400");
         }
         res.render("postDetail",{
             pageTitle: post.title,
@@ -15,11 +16,10 @@ exports.showPost = async(req, res) => {
             post,
             formatDate
         });
-
         
     } catch (err) {
         console.log(err);
-        res.render("errors/500")
+        get500(req, res);
     }
 
 }
