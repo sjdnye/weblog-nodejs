@@ -25,9 +25,7 @@ router.get("/delete-post/:id",authenticated, adminController.getDeletePost);
 // @route POST /dashboard/add-post
 router.post("/add-post", authenticated, adminController.handleAddpost);
 
-// @desc  Dashboard Handle DELETE Post
-// @route POST /dashboard/delete-post
-router.post("/delete-post/:id", authenticated, adminController.handleDeletePost)
+
 
 // @desc  Dashboard Handle Upload Image
 // @route POST /dashboard/image-upload
@@ -36,9 +34,6 @@ router.post("/image-upload",authenticated, adminController.handleUploadImage);
 // @desc  Dashboard Edit POST
 // @route POST /dashboard/edit-post/:id
 router.post("/edit-post/:id",authenticated, adminController.handleEditPost);
-
-
-
 
 
 

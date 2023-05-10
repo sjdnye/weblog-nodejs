@@ -5,15 +5,15 @@ document.getElementById("imageUpload").onclick = function () {
     const imageStatus = document.getElementById("imageStatus");
     const progressDiv = document.getElementById("progressDiv");
     const progressBar = document.getElementById("progressBar");
-     const uploadResult = document.getElementById("uploadResult");
+    const uploadResult = document.getElementById("uploadResult");
 
-    // xhttp.responseType = "json"
+    // xhttp.responseType = "json";
 
     xhttp.onreadystatechange = function () {
         if (xhttp.status === 200) {
             imageStatus.innerHTML = "آپلود عکس موفقیت آمیز بود"; //this.response.message
             uploadResult.innerHTML = this.responseText; //this.response.address
-            selectedImage.value = ""; // clear input file
+            selectedImage.value = ""; //? Input file clear
         } else {
             imageStatus.innerHTML = this.responseText;
         }
@@ -24,7 +24,7 @@ document.getElementById("imageUpload").onclick = function () {
     xhttp.upload.onprogress = function (e) {
         if (e.lengthComputable) {
             let result = Math.floor((e.loaded / e.total) * 100);
-            console.log(result + "%");
+            // console.log(result + "%");
             if (result !== 100) {
                 progressBar.innerHTML = result + "%";
                 progressBar.style = "width:" + result + "%";

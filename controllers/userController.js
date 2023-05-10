@@ -1,8 +1,10 @@
 const bcrypt = require('bcryptjs');
 const passport = require("passport");
 const fetch = require('node-fetch');
+const jwt =require('jsonwebtoken');
 
 const User = require('../models/User');
+const { sendEmail } = require('../utils/mailer');
 
 
 exports.login = (req, res) => {
@@ -72,7 +74,6 @@ exports.logout = (req, res) => {
 
 
 exports.createUser = async(req, res) => {
-    if (req.body) {
         // const validator = await registerSchema.isValid(req.body);
         // validator ? res.redirect("/") : res.send("Something went wrong!!")
 
@@ -99,6 +100,7 @@ exports.createUser = async(req, res) => {
                     email,
                     password: hash
                 })
+                // sendEmail(email, fullname, 'sunject', 'message');
                 req.flash("success_msg", "ثبت نام موفقیت آمیز بود")
                 res.redirect("/users/login")
                     // bcrypt.genSalt(10, (err, salt) => {
@@ -188,5 +190,99 @@ exports.createUser = async(req, res) => {
         //     });
 
         // }
+}
+
+
+exports.forgetPassword = async(req, res) => {
+    res.render("forgetPass", {
+        pageTitle: "فراموشی رمز عبور",
+        path: "/login",
+        message: req.flash("success_msg"),
+        error: req.flash("error")
+    })
+}
+
+exports.handleForgetPassword = async(req, res) => {
+    const { email} = req.body;
+
+    const user = await User.findOne({email : email});
+    if(!user){
+        req.flash("error", "کاربری با این ایمیل ثبت نیست");
+        return res.render("forgetPass", {
+            pageTitle: "فراموشی رمز عبور",
+            path: "/login",
+            message: req.flash("success_msg"),
+            error: req.flash("error")
+    
+        })
+    }
+    const token = jwt.sign({ userId: user._id}, process.env.JWT_SECRET, { expiresIn: "1h"});
+    const resetLink = `http://localhost:3000/users/reset-password/${token}`;
+
+    sendEmail(uer.email, user.fullname, 'فراموشی رمز عبور', `
+    برای تغییر رمز عبور روی لینک زیر کلیک کنید
+    <a href="${resetLink}"> لینک تغییر رمز عبور </a>
+    `
+    );
+
+    req.flash("success_msg", "ایمیل حاوی لینک با موفقیت ارسال شد")
+    return res.render("forgetPass", {
+        pageTitle: "فراموشی رمز عبور",
+        path: "/login",
+        message: req.flash("success_msg"),
+        error: req.flash("error")
+    });
+}
+
+exports.resetPassword = async(req, res) => {
+    const token = req.params.token;
+    let decodedToken;
+
+    try {
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+        console.log(err);
+        if(!decodedToken){
+            return res.redirect("/404");
+        }
+        
+    }
+    res.render("resetPass",{
+        pageTitle: "تغییر رمز عبور",
+        path: "/login",
+        message: req.flash("success_msg"),
+        error: req.flash("error"),
+        userId: decodedToken.userId
+    })
+}
+
+exports.handleResetPassword = async(req, res) => {
+    const errors = [];
+    try {
+        const { password, confirmPassword} = req.body;
+        if(password != confirmPassword){
+            req.flash("error", "کلمه های عبور یکسان نیستند")
+           return res.render("resetPass",{
+                pageTitle: "تغییر رمز عبور",
+                path: "/login",
+                message: req.flash("success_msg"),
+                error: req.flash("error"),
+                userId: req.params.id
+            })
+        
+        }else{
+            const user = await User.findOne({_id: req.params.id});
+            if(!user){
+                return res.redirect("/404");
+            }else{
+                const newPassword = await bcrypt.hash(passport, 10);
+                user.password = newPassword;
+                await user.save();
+                req.flash("success_msg", "تغییر رمز با موفقیت انجام شد")
+                res.redirect("/users/login");
+            }
+        }  
+    } catch (err) {
+        res.redirect("errors/500"); 
     }
 }

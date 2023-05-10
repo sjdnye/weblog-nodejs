@@ -68,6 +68,14 @@ router.get("/login", usercontroller.login);
 // @route  GET /users/register
 router.get("/register", usercontroller.register);
 
+// @desc  GET Forget Password Page
+// @route  GET /users/forget-password
+router.get("/forget-password", usercontroller.forgetPassword);
+
+// @desc  GET Reset Password Page
+// @route  GET /users/reset-password/:token
+router.get("/resset-password/:token", usercontroller.resetPassword);
+
 //@desc Logout Handle
 //@route GET /users/register
 router.get("/logout", authenticated, usercontroller.logout);
@@ -79,6 +87,14 @@ router.post("/login", usercontroller.handleLogin, usercontroller.rememberMe);
 // @desc Register Handle
 // @route POST /users/register
 router.post("/register", usercontroller.createUser);
+
+// @desc POST Handle Forget Password
+// @route POST /users/forget-password
+router.post("/forget-password", usercontroller.handleForgetPassword);
+
+// @desc POST Handle Reset Password
+// @route POST /users/reset-password/:id
+router.post("/resset-password/:id", usercontroller.handleResetPassword);
 
 
 

@@ -2,6 +2,7 @@ const path = require('path');
 
 const express = require('express');
 const mongoose = require('mongoose');
+const fileUpload = require('express-fileupload');
 const debug = require('debug')("weblog-project");
 const bodyParser = require('body-parser');
 const expressLayout = require('express-ejs-layouts');
@@ -43,6 +44,9 @@ app.set('views', 'views');
 //* Body-Parser
 app.use(bodyParser.urlencoded({ extended: false }));
 
+//* Upload File
+app.use(fileUpload());
+
 //* Session
 app.use(
     session({
@@ -61,6 +65,8 @@ app.use(passport.session());
 //* Flash
 app.use(flash());
 
+
+
 //* Statics Folder
 app.use(express.static(path.join(__dirname, "public")));
 // app.use(express.static(path.join(__dirname, process.env.BOOTSTRAP)));
@@ -69,9 +75,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 
 //* Routes
-app.use("/", require('./routes/blog'));
+app.use("/",require('./routes/blog'));
 app.use("/users", require('./routes/users'));
 app.use("/dashboard", require('./routes/dashboard'));
+app.use("/post", require('./routes/posts'));
 
 
 //* 404 Page

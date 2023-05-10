@@ -2,6 +2,9 @@ const multer = require('multer');
 const sharp = require('sharp');
 const uuid = require('uuid').v4;
 const shortId = require('shortid');
+const appRoot = require('app-root-path');
+const fs = require('fs');
+
 
 const Blog = require('../models/Blog');
 const {formatDate}  = require('../utils/jalali');
@@ -10,8 +13,9 @@ const  {storage, fileFilter} = require('../utils/multer');
 
 
 exports.getDashboard = async(req, res) => {
+ 
     const page = +req.query.page || 1; // this is for query approach . + is for transforming string to integer
-    const postPerPage = 2;
+    const postPerPage = 5;
     try {
         const numberOfPost = await Blog.find({user: req.user._id}).countDocuments();
 
@@ -86,11 +90,26 @@ exports.handleAddpost = async(req, res) => {
         //     body,
         //     status
         // })
-        await Blog.postValidation(req.body);
-        await Blog.create({...req.body, user: req.user.id });
+        const thumbnail = req.files ? req.files.thumbnail : {};
+        const fileName = `${shortId.generate()}_${thumbnail.name}`;
+        const uploadPath = `${appRoot}/public/uploads/thumbnails/${fileName}`;
+        req.body =  { ...req.body, thumbnail };
 
-        res.redirect("/dashboard")
+        await Blog.postValidation(req.body);
+        await sharp(thumbnail.data)
+            .jpeg({ quality: 60 })
+            .toFile(uploadPath)
+            .catch((err) => console.log(err));
+
+        await Blog.create({
+            ...req.body,
+            user: req.user.id,
+            thumbnail: fileName,
+        });
+        res.redirect("/dashboard");
     } catch (err) {
+        console.log(err);
+      if(err.inner){
         err.inner.forEach(e => {
             errors.push({
                 path: e.path,
@@ -105,15 +124,24 @@ exports.handleAddpost = async(req, res) => {
             fullname: req.user.fullname,
             errors
         })
+      }else{
+        res.render("errors/500")
+      }
     }
 }
 
 exports.handleEditPost = async(req ,res) => {
     const errors = [];
     const post = await Blog.findOne({_id: req.params.id})
+    const thumbnail = req.files ? req.files.thumbnail : {};
+    const fileName = `${shortId.generate()}_${thumbnail.name}`;
+    const uploadPath = `${appRoot}/public/uploads/thumbnails/${fileName}`;
     try {
-        await Blog.postValidation(req.body);
-
+        if(thumbnail.name){
+            await Blog.postValidation({... req.body, thumbnail});
+        }else{
+            await Blog.postValidation({... req.body, thumbnail : {name: "placeholder", size:0, mimetype: "image/jpeg"}})
+        }
         if (!post) {
             return res.redirect("errors/404");
         }
@@ -121,11 +149,24 @@ exports.handleEditPost = async(req ,res) => {
         if (post.user.toString() != req.user._id) {
             return res.redirect("/dashboard");
         } else {
+
+            if(thumbnail.name){
+                fs.unlink(`${appRoot}/public/uploads/thumbnails/${post.thumbnail}`, async(err) => {
+                    if(err) console.log(err);
+                    else{
+                        await sharp(thumbnail.data)
+                        .jpeg({ quality: 60 })
+                        .toFile(uploadPath)
+                        .catch((err) => console.log(err));
+                    }
+                })
+            }
+
             const { title, status, body } = req.body;
             post.title = title;
             post.status = status;
             post.body = body;
-
+            post.thumbnail = thumbnail.name ? fileName : post.thumbnail;
             await post.save();
             return res.redirect("/dashboard");
         }
@@ -163,44 +204,41 @@ exports.getDeletePost = async(req, res) => {
 
 }
 
-exports.handleDeletePost = (req, res) => {
-
-}
 
 exports.handleUploadImage = (req, res) => {
     const upload = multer({
-        limits: {
-            fileSize: 4000000
-        },
+        limits: { fileSize: 4000000 },
         // dest: "uploads/",
         // storage: storage,
-        fileFilter: fileFilter
+        fileFilter: fileFilter,
     }).single("image");
-
-    upload(req, res, async(err) => {
-        if(err){
-            if(err.code === "LIMIT_FILE_SIZE"){
+    //req.file
+    // console.log(req.file)
+    upload(req, res, async (err) => {
+        if (err) {
+            if (err.code === "LIMIT_FILE_SIZE") {
                 return res
-                .status(400)
-                .send("حجم عکس ارسالی نباید بیشتر از 4 مگابایت باشد")
+                    .status(400)
+                    .send("حجم عکس ارسالی نباید بیشتر از 4 مگابایت باشد");
             }
             res.status(400).send(err);
-        }else{
-            if(req.file){
-                const filename = `${shortId.generate()}_${req.file.originalname}`
-                await sharp(req.file.buffer).jpeg({
-                    quality: 60
-                })
-                .toFile(`./public/uploads/${filename}`)
-                .catch(err => {
-                    console.log(err);
-                })
-                // res.json({"message": "", "address": ""});
-    
-                res.status(200).send(`http://localhost:3000/uploads/${filename}`)
-            }else{
-                res.send("جهت آپلود باید عکسی انتخاب کنید")
+        } else {
+            if (req.file) {
+                const fileName = `${shortId.generate()}_${
+                    req.file.originalname
+                }`;
+                await sharp(req.file.buffer)
+                    .jpeg({
+                        quality: 60,
+                    })
+                    .toFile(`./public/uploads/${fileName}`)
+                    .catch((err) => console.log(err));
+                res.status(200).send(
+                    `http://localhost:3000/uploads/${fileName}`
+                );
+            } else {
+                res.send("جهت آپلود باید عکسی انتخاب کنید");
             }
         }
-    })
-}
+    });
+};
