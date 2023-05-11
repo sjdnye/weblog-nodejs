@@ -24,6 +24,11 @@ exports.getDashboard = async(req, res) => {
             .limit(postPerPage)
             .sort({ createdAt : "desc"})
 
+        res.set(
+            "Cache-Control",
+            "no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0"
+        );
+
         res.render("private/blogs", {
             pageTitle: "بخش مدیریت | داشبورد",
             path: "/dashboard",
@@ -225,11 +230,11 @@ exports.handleUploadImage = (req, res) => {
             }
             res.status(400).send(err);
         } else {
-            if (req.file) {
+            if (req.files) {
                 const fileName = `${shortId.generate()}_${
-                    req.file.originalname
+                    req.files.image.name
                 }`;
-                await sharp(req.file.buffer)
+                await sharp(req.files.image.data)
                     .jpeg({
                         quality: 60,
                     })

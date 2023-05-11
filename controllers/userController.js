@@ -8,6 +8,10 @@ const { sendEmail } = require('../utils/mailer');
 
 
 exports.login = (req, res) => {
+    res.set(
+        "Cache-Control",
+        "no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0"
+    );
     res.render("login", {
         pageTitle: "صفحه ورود",
         path: "/login",
@@ -69,6 +73,10 @@ exports.logout = (req, res) => {
     req.session = null;
     req.logout();
     // req.flash("success_msg", "خروج موفقیت آمیز بود");
+    res.set(
+        "Cache-Control",
+        "no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0"
+    );
     res.redirect("/users/login")
 }
 
