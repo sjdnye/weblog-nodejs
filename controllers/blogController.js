@@ -1,63 +1,54 @@
 const Yup = require("yup");
-const captchapng = require('captchapng');
-
-
+const captchapng = require("captchapng");
 const Blog = require("../models/Blog");
-const { formatDate } = require("../utils/jalali");
-const { truncate } = require('../utils/helpers');
+const { sendEmail } = require("../utils/mailer");
 
 let CAPTCHA_NUM;
 
-exports.getIndex = async (req, res) => {
+exports.getIndex = async (req, res, next) => {
     try {
-        const page = +req.query.page || 1; 
-        const postPerPage = 5;
+        const numberOfPosts = await Blog.find({
+            status: "public",
+        }).countDocuments();
 
-        const numberOfPost = await Blog.find({status: "public"}).countDocuments();
-
-        const posts = await Blog.find({ status: "public" })
-            .sort({
-                createdAt: "desc",
-            })
-            .skip((page - 1) * postPerPage)
-            .limit(postPerPage)
-
-        res.render("index", {
-            pageTitle: "وبلاگ",
-            path: "/",
-            posts,
-            formatDate,
-            truncate,
-            currentPage: page,
-            nextPage: page + 1,
-            prevPage: page - 1,
-            hasNextPage: postPerPage * page < numberOfPost,
-            hasPrevPage: page > 1,
-            lastPage: Math.ceil(numberOfPost / postPerPage)
+        const posts = await Blog.find({ status: "public" }).sort({
+            createdAt: "desc",
         });
+
+        if (!posts) {
+            const error = new Error("هیچ پستی در پایگاه داده ثبت نشده است");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        res.status(200).json({ posts, total: numberOfPosts });
     } catch (err) {
-        console.log(err);
-        res.render("errors/500");
+        next(err);
     }
 };
 
+exports.getSinglePost = async (req, res, next) => {
+    try {
+        const post = await Blog.findOne({ _id: req.params.id }).populate(
+            "user"
+        );
 
-exports.getContactPage = (req, res) => {
+        if (!post) {
+            const error = new Error("پستی با این شناسه یافت نشد");
+            error.statusCode = 404;
+            throw error;
+        }
 
-    res.render("contact", {
-        pageTitle: "تماس با ما",
-        path: "/contact",
-        message: req.flash("success_msg"),
-        error: req.flash("error"),
-        errors: []
-    })
+        res.status(200).json({ post });
+    } catch (err) {
+        next(err);
+    }
+};
 
-}
-
-exports.handleContactPage = async (req, res) => {
+exports.handleContactPage = async (req, res, next) => {
     const errorArr = [];
 
-    const { fullname, email, message, captcha } = req.body;
+    const { fullname, email, message } = req.body;
 
     const schema = Yup.object().shape({
         fullname: Yup.string().required("نام و نام خانوادگی الزامی می باشد"),
@@ -70,36 +61,14 @@ exports.handleContactPage = async (req, res) => {
     try {
         await schema.validate(req.body, { abortEarly: false });
 
-        if (parseInt(captcha) === CAPTCHA_NUM) {
-            sendEmail(
-                email,
-                fullname,
-                "پیام از طرف وبلاگ",
-                `${message} <br/> ایمیل کاربر : ${email}`
-            );
+        sendEmail(
+            email,
+            fullname,
+            "پیام از طرف وبلاگ",
+            `${message} <br/> ایمیل کاربر : ${email}`
+        );
 
-            req.flash("success_msg", "پیام شما با موفقیت ارسال شد");
-
-            return res.render("contact", {
-                pageTitle: "تماس با ما",
-                path: "/contact",
-                message: req.flash("success_msg"),
-                error: req.flash("error"),
-                errors: errorArr,
-            });
-        }else{
-            req.flash("error", "کد امنیتی صحیح نیست");
-
-            res.render("contact", {
-                pageTitle: "تماس با ما",
-                path: "/contact",
-                message: req.flash("success_msg"),
-                error: req.flash("error"),
-                errors: errorArr,
-            });
-        }
-
-    
+        res.status(200).json({ message: "پیام شما با موفقیت ارسال شد" });
     } catch (err) {
         err.inner.forEach((e) => {
             errorArr.push({
@@ -107,13 +76,12 @@ exports.handleContactPage = async (req, res) => {
                 message: e.message,
             });
         });
-        res.render("contact", {
-            pageTitle: "تماس با ما",
-            path: "/contact",
-            message: req.flash("success_msg"),
-            error: req.flash("error"),
-            errors: errorArr,
-        });
+
+        const error = new Error("خطا در اعتبار سنجی");
+        error.statusCode = 422;
+        error.data = errorArr;
+
+        next(error);
     }
 };
 

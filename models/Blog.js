@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const {registerPostSchema} = require('./secure/postValidation');
+
+const { schema } = require("./secure/postValidation");
 
 const blogSchmea = new mongoose.Schema({
     title: {
@@ -7,7 +8,7 @@ const blogSchmea = new mongoose.Schema({
         required: true,
         trim: true,
         minlength: 5,
-        maxlength: 255,
+        maxlength: 100,
     },
     body: {
         type: String,
@@ -16,7 +17,7 @@ const blogSchmea = new mongoose.Schema({
     status: {
         type: String,
         default: "public",
-        enum: ["public", "private"],
+        enum: ["private", "public"],
     },
     thumbnail: {
         type: String,
@@ -32,8 +33,10 @@ const blogSchmea = new mongoose.Schema({
     },
 });
 
-blogSchmea.statics.postValidation = function(body) {
-    return registerPostSchema.validate(body, { abortEarly: false });
-}
+blogSchmea.index({ title: "text" });
+
+blogSchmea.statics.postValidation = function (body) {
+    return schema.validate(body, { abortEarly: false });
+};
 
 module.exports = mongoose.model("Blog", blogSchmea);

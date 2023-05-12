@@ -1,288 +1,167 @@
-const bcrypt = require('bcryptjs');
 const passport = require("passport");
-const fetch = require('node-fetch');
-const jwt =require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
-const User = require('../models/User');
-const { sendEmail } = require('../utils/mailer');
+const User = require("../models/User");
+const { sendEmail } = require("../utils/mailer");
 
-
-exports.login = (req, res) => {
-    res.render("login", {
-        pageTitle: "صفحه ورود",
-        path: "/login",
-        message: req.flash("success_msg"),
-        error: req.flash("error")
-    })
-}
-
-exports.register = (req, res) => {
-    res.render("register", {
-        pageTitle: "ثبت نام کاربر",
-        path: "/register"
-    });
-}
-
-exports.handleLogin = async(req, res, next) => {
-    if (!req.body["g-recaptcha-response"] || req.body["g-recaptcha-response"] == 'undefiend' || req.body["g-recaptcha-response"] == null) {
-        req.flash("error", "اعتبارسنجی captcha الزامی میباشد");
-        return res.redirect("/users/login");
-    }
-    const secretKey = process.env.CAPTCHA_SECRET
-    const verifyUrl = `https://google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${req.body["g-recaptcha-response"]}&remoteip=${req.connection.remoteAddress}`
-
-    const response = await fetch(verifyUrl, {
-        method: "POST",
-        header: {
-            Accept: "application/json",
-            "Content-Type": "application/x-www-form-urlencoded; charset=utf8"
-        }
-    })
-
-    const resultInJson = await response.json();
-    const isSuccess = resultInJson.success;
-
-    if (isSuccess) {
-        passport.authenticate("local", {
-            // successRedirect: "/dashboard",
-            failureRedirect: "/users/login",
-            failureFlash: true,
-        })(req, res, next);
-    } else {
-        req.flash("error", "مشکلی در اعتبارسنجی captcha هست")
-        res.redirect("/users/login")
-    }
-
-
+exports.handleLogin = async (req, res, next) => {
+    passport.authenticate("local", {
+        failureRedirect: "/users/login",
+        failureFlash: true,
+    })(req, res, next);
 };
 
 exports.rememberMe = (req, res) => {
     if (req.body.remember) {
-        req.session.cookie.originalMaxAge = 24 * 60 * 60 * 1000 //24h
+        req.session.cookie.originalMaxAge = 24 * 60 * 60 * 1000; // 1 day 24
     } else {
         req.session.cookie.expire = null;
     }
-    res.redirect("/dashboard")
-}
+
+    res.redirect("/dashboard");
+};
 
 exports.logout = (req, res) => {
     req.session = null;
     req.logout();
-    // req.flash("success_msg", "خروج موفقیت آمیز بود");
-    res.redirect("/users/login")
-}
+    res.redirect("/users/login");
+};
 
+exports.createUser = async (req, res) => {
+    const errors = [];
+    try {
+        await User.userValidation(req.body);
+        const { fullname, email, password } = req.body;
 
-exports.createUser = async(req, res) => {
-        // const validator = await registerSchema.isValid(req.body);
-        // validator ? res.redirect("/") : res.send("Something went wrong!!")
-
-        //OR ( Yup  + try catch)
-        const errors = [];
-        try {
-            const { fullname, email, password } = req.body
-            await User.userValidation(req.body)
-            const user = await User.findOne({ email });
-
-            if (user) {
-                errors.push({
-                    message: "کاربری با این ایمیل موجوداست"
-                })
-                return res.render("register", {
-                    pageTitle: "ثبت نام کاربر",
-                    errors: errors,
-                    path: "/register"
-                })
-            } else {
-                const hash = await bcrypt.hash(password, 10)
-                await User.create({
-                    fullname,
-                    email,
-                    password: hash
-                })
-                // sendEmail(email, fullname, 'sunject', 'message');
-                req.flash("success_msg", "ثبت نام موفقیت آمیز بود")
-                res.redirect("/users/login")
-                    // bcrypt.genSalt(10, (err, salt) => {
-                    //     if (err) {
-                    //         throw err
-                    //     } else {
-                    //         bcrypt.hash(password, salt, async(err, hash) => {
-                    //             if (err) throw err
-
-                //             await User.create({
-                //                 fullname,
-                //                 email,
-                //                 password: hash
-                //             })
-                //             res.redirect("/users/login")
-                //         })
-                //     }
-                // })
-
-            }
-
-            // const user = new User({
-            //     fullname,
-            //     email,
-            //     password
-            // })
-            // user.save()
-            //     .then(user => {
-            //         return res.redirect("/users/login")
-
-            //     })
-            //     .catch(err => { if (err) throw err })
-
-
-        } catch (err) {
-            console.log(err);
-            err.inner.forEach((e) => {
-                errors.push({
-                    path: e.path,
-                    message: e.message,
-                });
-            });
-
+        const user = await User.findOne({ email });
+        if (user) {
+            errors.push({ message: "کاربری با این ایمیل موجود است" });
             return res.render("register", {
                 pageTitle: "ثبت نام کاربر",
-                errors: errors,
-                path: "/register"
-            })
-
+                path: "/register",
+                errors,
+            });
         }
 
-        // User.userValidation(req.body)
-        //     .then(result => {
-        //         res.redirect("/users/login")
-        //     }).catch(err => {
-        //         // console.log(err);
-        //         // for (let error of err.errors) {
-        //         //     console.log(error);
-        //         // }
-        //         res.render("register", {
-        //             pageTitle: "ثبت نام کاربر",
-        //             errors: err.errors,
-        //             path: "/register"
-        //         })
-        //     })
+        await User.create({ fullname, email, password });
 
-        // OR ( fastest validator )
-        // const validate = validator.validate(req.body, schema);
-        // const errorArr = [];
-        // if (validate === true) {
-        //     const { fullname, email, password, confirmPassword } = req.body;
-        //     if (password != confirmPassword) {
-        //         errorArr.push({ message: "کلمه های عبور یکسان نیستند" });
-        //         return res.render("register", {
-        //             pageTitle: "ثبت نام کاربر",
-        //             path: "/register",
-        //             errors: errorArr
-        //         });
-        //     }
-        //     res.redirect("users/login");
-        // } else {
+        //? Send Welcome Email
+        sendEmail(
+            email,
+            fullname,
+            "خوش آمدی به وبلاگ ما",
+            "خیلی خوشحالیم که به جمع ما وبلاگرهای خفن ملحق شدی"
+        );
 
-        //     return res.render("register", {
-        //         pageTitle: "ثبت نام کاربر",
-        //         path: "/register",
-        //         errors: validate
-        //     });
+        req.flash("success_msg", "ثبت نام موفقیت آمیز بود.");
+        res.redirect("/users/login");
+    } catch (err) {
+        console.log(err);
+        err.inner.forEach((e) => {
+            errors.push({
+                name: e.path,
+                message: e.message,
+            });
+        });
 
-        // }
-}
+        return res.render("register", {
+            pageTitle: "ثبت نام کاربر",
+            path: "/register",
+            errors,
+        });
+    }
+};
 
+exports.handleForgetPassword = async (req, res) => {
+    const { email } = req.body;
 
-exports.forgetPassword = async(req, res) => {
-    res.render("forgetPass", {
-        pageTitle: "فراموشی رمز عبور",
-        path: "/login",
-        message: req.flash("success_msg"),
-        error: req.flash("error")
-    })
-}
+    const user = await User.findOne({ email: email });
 
-exports.handleForgetPassword = async(req, res) => {
-    const { email} = req.body;
+    if (!user) {
+        req.flash("error", "کاربری با ایمیل در پایگاه داده ثبت نیست");
 
-    const user = await User.findOne({email : email});
-    if(!user){
-        req.flash("error", "کاربری با این ایمیل ثبت نیست");
         return res.render("forgetPass", {
             pageTitle: "فراموشی رمز عبور",
             path: "/login",
             message: req.flash("success_msg"),
-            error: req.flash("error")
-    
-        })
+            error: req.flash("error"),
+        });
     }
-    const token = jwt.sign({ userId: user._id}, process.env.JWT_SECRET, { expiresIn: "1h"});
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+    });
     const resetLink = `http://localhost:3000/users/reset-password/${token}`;
 
-    sendEmail(uer.email, user.fullname, 'فراموشی رمز عبور', `
-    برای تغییر رمز عبور روی لینک زیر کلیک کنید
-    <a href="${resetLink}"> لینک تغییر رمز عبور </a>
+    sendEmail(
+        user.email,
+        user.fullname,
+        "فراموشی رمز عبور",
+        `
+        جهت تغییر رمز عبور فعلی رو لینک زیر کلیک کنید
+        <a href="${resetLink}">لینک تغییر رمز عبور</a>
     `
     );
 
-    req.flash("success_msg", "ایمیل حاوی لینک با موفقیت ارسال شد")
-    return res.render("forgetPass", {
+    req.flash("success_msg", "ایمیل حاوی لینک با موفقیت ارسال شد");
+
+    res.render("forgetPass", {
         pageTitle: "فراموشی رمز عبور",
         path: "/login",
         message: req.flash("success_msg"),
-        error: req.flash("error")
+        error: req.flash("error"),
     });
-}
+};
 
-exports.resetPassword = async(req, res) => {
+exports.resetPassword = async (req, res) => {
     const token = req.params.token;
+
     let decodedToken;
 
     try {
         decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        console.log(decodedToken);
     } catch (err) {
         console.log(err);
-        if(!decodedToken){
+        if (!decodedToken) {
             return res.redirect("/404");
         }
-        
     }
-    res.render("resetPass",{
-        pageTitle: "تغییر رمز عبور",
+
+    res.render("resetPass", {
+        pageTitle: "تغییر پسورد",
         path: "/login",
         message: req.flash("success_msg"),
         error: req.flash("error"),
-        userId: decodedToken.userId
-    })
-}
+        userId: decodedToken.userId,
+    });
+};
 
-exports.handleResetPassword = async(req, res) => {
-    const errors = [];
-    try {
-        const { password, confirmPassword} = req.body;
-        if(password != confirmPassword){
-            req.flash("error", "کلمه های عبور یکسان نیستند")
-           return res.render("resetPass",{
-                pageTitle: "تغییر رمز عبور",
-                path: "/login",
-                message: req.flash("success_msg"),
-                error: req.flash("error"),
-                userId: req.params.id
-            })
-        
-        }else{
-            const user = await User.findOne({_id: req.params.id});
-            if(!user){
-                return res.redirect("/404");
-            }else{
-                const newPassword = await bcrypt.hash(passport, 10);
-                user.password = newPassword;
-                await user.save();
-                req.flash("success_msg", "تغییر رمز با موفقیت انجام شد")
-                res.redirect("/users/login");
-            }
-        }  
-    } catch (err) {
-        res.redirect("errors/500"); 
+exports.handleResetPassword = async (req, res) => {
+    const { password, confirmPassword } = req.body;
+    console.log(password, confirmPassword);
+
+    if (password !== confirmPassword) {
+        req.flash("error", "کلمه های عبور یاکسان نیستند");
+
+        return res.render("resetPass", {
+            pageTitle: "تغییر پسورد",
+            path: "/login",
+            message: req.flash("success_msg"),
+            error: req.flash("error"),
+            userId: req.params.id,
+        });
     }
-}
+
+    const user = await User.findOne({ _id: req.params.id });
+
+    if (!user) {
+        return res.redirect("/404");
+    }
+
+    user.password = password;
+    await user.save();
+
+    req.flash("success_msg", "پسورد شما با موفقیت بروزرسانی شد");
+    res.redirect("/users/login");
+};

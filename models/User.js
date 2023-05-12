@@ -1,47 +1,46 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const { registerSchema } = require('./secure/userValidation');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const { schema } = require("./secure/userValidation");
 
 const userSchema = new mongoose.Schema({
     fullname: {
         type: String,
-        required: true,
-        trim: true
+        required: [true, "نام و نام خانوادگی الزامی می باشد"],
+        trim: true,
     },
     email: {
         type: String,
         required: true,
-        unique: true
-
+        unique: true,
     },
     password: {
         type: String,
         required: true,
         minlength: 4,
-        maxlength: 255
-
+        maxlength: 255,
     },
-    createedAt: {
+    createdAt: {
         type: Date,
-        default: Date.now
-    }
-})
+        default: Date.now,
+    },
+});
 
-userSchema.statics.userValidation = function(body) {
-    return registerSchema.validate(body, { abortEarly: false });
-}
+userSchema.statics.userValidation = function (body) {
+    return schema.validate(body, { abortEarly: false });
+};
 
-// userSchema.pre("save", function(next) {
-//     let user = this;
+userSchema.pre("save", function (next) {
+    let user = this;
 
-//     if (!user.isModified("password")) return next();
+    if (!user.isModified("password")) return next();
 
-//     bcrypt.hash(user.password, 10, (err, hash) => {
-//         if (err) return next(err);
+    bcrypt.hash(user.password, 10, (err, hash) => {
+        if (err) return next(err);
 
-//         user.password = hash;
-//         next();
-//     });
-// }); 
+        user.password = hash;
+        next();
+    });
+});
 
-module.exports = mongoose.model("User", userSchema);;
+module.exports = mongoose.model("User", userSchema);

@@ -1,7 +1,6 @@
 const Yup = require("yup");
 
-
-exports.registerSchema = Yup.object().shape({
+exports.schema = Yup.object().shape({
     fullname: Yup.string()
         .required("نام و نام خانوادگی الزامی می باشد")
         .min(4, "نام و نام خانوادگی نباید کمتر از 4 کاراکتر باشد")
