@@ -46,8 +46,6 @@ exports.getSinglePost = async (req, res, next) => {
 };
 
 exports.handleContactPage = async (req, res, next) => {
-    const errorArr = [];
-
     const { fullname, email, message } = req.body;
 
     const schema = Yup.object().shape({
@@ -70,18 +68,7 @@ exports.handleContactPage = async (req, res, next) => {
 
         res.status(200).json({ message: "پیام شما با موفقیت ارسال شد" });
     } catch (err) {
-        err.inner.forEach((e) => {
-            errorArr.push({
-                name: e.path,
-                message: e.message,
-            });
-        });
-
-        const error = new Error("خطا در اعتبار سنجی");
-        error.statusCode = 422;
-        error.data = errorArr;
-
-        next(error);
+        next(err);
     }
 };
 
