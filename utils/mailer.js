@@ -2,12 +2,12 @@ const nodeMailer = require("nodemailer");
 const smtpTransport = require("nodemailer-smtp-transport");
 
 const transporterDetails = smtpTransport({
-    host: "mail.ghorbany.dev",
+    host: "mail.sjdnye.dev",
     port: 465,
     secure: true,
     auth: {
-        user: "toplearn@ghorbany.dev",
-        pass: "toplearn123456",
+        user: "toplearn@sjdnye.dev",
+        pass: "nodejs1990sjdnye",
     },
     tls: {
         rejectUnauthorized: false,
@@ -17,7 +17,7 @@ const transporterDetails = smtpTransport({
 exports.sendEmail = (email, fullname, subject, message) => {
     const transporter = nodeMailer.createTransport(transporterDetails);
     transporter.sendMail({
-        from: "toplearn@ghorbany.dev",
+        from: "toplearn@sjdnye.dev",
         to: email,
         subject: subject,
         html: `<h1> سلام ${fullname}</h1>
